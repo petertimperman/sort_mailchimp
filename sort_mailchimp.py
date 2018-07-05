@@ -69,11 +69,12 @@ for page in range(1, pages+1):
 
 end = time.time() - start
 
-set_key(find_dotenv(),"LAST_ORDER_DATE",orders[0].created_at) #Date of the last order set in .env for the next time 
+
 print end 
 for order in orders: 
 	if order.email != "" and hasattr(order, "customer") and hasattr(order.customer, "accepts_marketing") and  order.customer.accepts_marketing == True:
 		customer_type = ""
+		customers_tup = (order.email, order.customer.first_name, order.customer.last_name)
 		for line_item in order.line_items:
 			if line_item.product_id is None: #Skip the item if it doesnt have an id  
 				without_product_id += 1 
@@ -83,30 +84,38 @@ for order in orders:
 				customer_type = "both"
 			else:
 				customer_type = prod_type
-		if order.email in customer_type_dict:
-			if customer_type_dict[order.email] != "both" and customer_type_dict[order.email] != customer_type:
-				customer_type_dict[order.email] = "both"
+		if customers_tup in customer_type_dict:
+			if customer_type_dict[customers_tup] != "both" and customer_type_dict[customers_tup] != customer_type:
+				customer_type_dict[customers_tup] = "both"
 		else:
-			customer_type_dict[order.email] = customer_type
+			customer_type_dict[customers_tup] = customer_type
 
-for customer_email in customer_type_dict.keys():
-	print customer_email
-	print customer_type_dict[customer_email]
-	if customer_type_dict[customer_email] == "auto":
+for customer_tup in customer_type_dict.keys():
+	customer_email, first_name, last_name = customer_tup
+	print customer_type_dict[customer_tup]
+	if customer_type_dict[customer_tup] == "auto":
 		try:
 			client.lists.members.create(B2C_AUTO_ID, {
 			    'email_address': customer_email,
 			    'status': 'subscribed',
+			   'merge_fields': {
+        		'FNAME': first_name,
+       		 	'LNAME': last_name,
+    		},
 			   
 			})
 		except Exception as e:
 
 			print "Already in atuo"
-	elif customer_type_dict[customer_email] == "marine":
+	elif customer_type_dict[customer_tup] == "marine":
 		try:
 			client.lists.members.create(B2C_MARINE_ID, {
-			    'email_address': customer_email,
+			      'email_address': customer_email,
 			    'status': 'subscribed',
+			   'merge_fields': {
+        		'FNAME': first_name,
+       		 	'LNAME': last_name,
+    		},
 			   
 			})
 		except Exception as e:
@@ -114,21 +123,29 @@ for customer_email in customer_type_dict.keys():
 	else:
 		try:
 			client.lists.members.create(B2C_AUTO_ID, {
-			    'email_address': customer_email,
+			     'email_address': customer_email,
 			    'status': 'subscribed',
+			   'merge_fields': {
+        		'FNAME': first_name,
+       		 	'LNAME': last_name,
+    		},
 			   
 			})
 			client.lists.members.create(B2C_MARINE_ID, {
-			    'email_address': customer_email,
+			      'email_address': customer_email,
 			    'status': 'subscribed',
-			  
+			   'merge_fields': {
+        		'FNAME': first_name,
+       		 	'LNAME': last_name,
+    		},
+			   
 			})
 		except Exception as e:
 			print "Already in both"
 	
 
 		 
-
+set_key(find_dotenv(),"LAST_ORDER_DATE",orders[0].created_at) #Date of the last order set in .env for the next time 
 
 
 
